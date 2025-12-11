@@ -58,26 +58,26 @@ def process_code_block(text):
 def process_image(alt, path):
     # check if file exists
     if not os.path.exists(path):
-        return f'[Image not found: {path}]'
+        return f'<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR>[Image not found: {path}]</CHAR></TEXT></P>'
     
     # Read and encode
     try:
         with open(path, "rb") as image_file:
              encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
     except Exception as e:
-        return f'[Image error: {e}]'
+        return f'<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR>[Image error: {e}]</CHAR></TEXT></P>'
     
     # Add to global BINDATA list
     global BIN_DATA_ENTRIES
     bin_id = len(BIN_DATA_ENTRIES) + 1
     ext = os.path.splitext(path)[1].replace('.', '').lower()
-    if ext == 'jpeg': ext = 'jpg'
+    if ext == 'jpg': ext = 'jpeg'
     
-    BIN_DATA_ENTRIES.append(f'<BINITEM Id="{bin_id}" BinData="{encoded_string}" Format="{ext}" Type="Embedding" />')
+    BIN_DATA_ENTRIES.append(f'<BINITEM BinData="{encoded_string}" Format="{ext}" Type="Embedding" />')
     
     # Return Placeholder (until exact PICTURE tag syntax is confirmed)
     # Using a recognizable placeholder
-    return f'[Image Embedded: {alt} (ID: {bin_id})]'
+    return f'<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR>[Image Embedded: {alt} (ID: {bin_id})]</CHAR></TEXT></P>'
 
 
 def get_header(bindata_list=""):
@@ -256,14 +256,12 @@ ret = re.sub("---(.|\n)*---", "", ret, count=1)
 
 # 2. Images: ![alt](path)
 # Must be done before text wrapping
-# Return text placeholder to avoid nested <P> tags invalidating XML
 ret = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: process_image(m.group(1), m.group(2)), ret)
 
 
 # 3. Code Blocks (Pre-processing)
 # Must be done before text wrapping to apply special ParaShape
-# Ensure it matches start of line to avoid inline issues
-ret = re.sub(r'(?m)^```(.*?)```', lambda m: process_code_block(m.group(1)), ret, flags=re.DOTALL)
+ret = re.sub(r'```(.*?)```', lambda m: process_code_block(m.group(1)), ret, flags=re.DOTALL)
 
 
 # 4. Page Break / HR: ---
