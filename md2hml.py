@@ -94,7 +94,7 @@ def get_header(bindata_list=""):
         <BOTTOMBORDER Type="Solid" Width="0.12mm" Color="0" />
     </BORDERFILL>
 </BORDERFILLLIST>
-<CHARSHAPELIST Count="8">
+<CHARSHAPELIST Count="9">
     <CHARSHAPE BorderFillId="2" Height="1000" Id="0" ShadeColor="4294967295" SymMark="0" TextColor="0" UseFontSpace="false" UseKerning="false">
         <FONTID Hangul="1" Hanja="1" Japanese="1" Latin="1" Other="1" Symbol="1" User="1" />
         <RATIO Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100" />
@@ -157,8 +157,16 @@ def get_header(bindata_list=""):
         <RELSIZE Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100" />
         <CHAROFFSET Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0" />
     </CHARSHAPE>
+    <CHARSHAPE BorderFillId="2" Height="1000" Id="8" ShadeColor="4294967295" SymMark="0" TextColor="8421504" UseFontSpace="false" UseKerning="false">
+        <FONTID Hangul="1" Hanja="1" Japanese="1" Latin="1" Other="1" Symbol="1" User="1" />
+        <RATIO Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100" />
+        <CHARSPACING Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0" />
+        <RELSIZE Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100" />
+        <CHAROFFSET Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0" />
+        <ITALIC />
+    </CHARSHAPE>
 </CHARSHAPELIST>
-<PARASHAPELIST Count="11">
+<PARASHAPELIST Count="13">
     <PARASHAPE Align="Justify" AutoSpaceEAsianEng="false" AutoSpaceEAsianNum="false" BreakLatinWord="KeepWord" BreakNonLatinWord="true" Condense="0" FontLineHeight="false" HeadingType="None" Id="0" KeepLines="false" KeepWithNext="false" Level="0" LineWrap="Break" PageBreakBefore="false" SnapToGrid="true" TabDef="0" VerAlign="Baseline" WidowOrphan="false">
         <PARAMARGIN Indent="0" Left="0" LineSpacing="160" LineSpacingType="Percent" Next="0" Prev="0" Right="0" />
         <PARABORDER BorderFill="2" Connect="false" IgnoreMargin="false" />
@@ -203,17 +211,22 @@ def get_header(bindata_list=""):
         <PARAMARGIN Indent="0" Left="0" LineSpacing="160" LineSpacingType="Percent" Next="0" Prev="0" Right="0" />
         <PARABORDER BorderFill="4" Connect="false" IgnoreMargin="false" />
     </PARASHAPE>
+    <PARASHAPE Align="Justify" AutoSpaceEAsianEng="false" AutoSpaceEAsianNum="false" BreakLatinWord="KeepWord" BreakNonLatinWord="true" Condense="0" FontLineHeight="false" HeadingType="None" Id="11" KeepLines="false" KeepWithNext="false" Level="0" LineWrap="Break" PageBreakBefore="false" SnapToGrid="true" TabDef="0" VerAlign="Baseline" WidowOrphan="false">
+        <PARAMARGIN Indent="0" Left="2000" LineSpacing="160" LineSpacingType="Percent" Next="0" Prev="0" Right="0" />
+        <PARABORDER BorderFill="2" Connect="false" IgnoreMargin="false" />
+    </PARASHAPE>
+    <PARASHAPE Align="Justify" AutoSpaceEAsianEng="false" AutoSpaceEAsianNum="false" BreakLatinWord="KeepWord" BreakNonLatinWord="true" Condense="0" FontLineHeight="false" HeadingType="None" Id="12" KeepLines="false" KeepWithNext="false" Level="0" LineWrap="Break" PageBreakBefore="false" SnapToGrid="true" TabDef="0" VerAlign="Baseline" WidowOrphan="false">
+        <PARAMARGIN Indent="-2104" Left="2104" LineSpacing="160" LineSpacingType="Percent" Next="0" Prev="0" Right="0" />
+        <PARABORDER BorderFill="2" Connect="false" IgnoreMargin="false" />
+    </PARASHAPE>
 </PARASHAPELIST>
 
 </MAPPINGTABLE><COMPATIBLEDOCUMENT TargetProgram="None"><LAYOUTCOMPATIBILITY AdjustBaselineInFixedLinespacing="false" AdjustBaselineOfObjectToBottom="false" AdjustLineheightToFont="false" AdjustMarginFromAdjustLineheight="false" AdjustParaBorderOffsetWithBorder="false" AdjustParaBorderfillToSpacing="false" AdjustVertPosOfLine="false" ApplyAtLeastToPercent100Pct="false" ApplyCharSpacingToCharGrid="false" ApplyExtendHeaderFooterEachSection="false" ApplyFontWeightToBold="false" ApplyFontspaceToLatin="false" ApplyMinColumnWidthTo1mm="false" ApplyNextspacingOfLastPara="false" ApplyParaBorderToOutside="false" ApplyPrevspacingBeneathObject="false" ApplyTabPosBasedOnSegment="false" BaseCharUnitOfIndentOnFirstChar="false" BaseCharUnitOnEAsian="false" BaseLinespacingOnLinegrid="false" BreakTabOverLine="false" ConnectParaBorderfillOfEqualBorder="false" DoNotAdjustEmptyAnchorLine="false" DoNotAdjustWordInJustify="false" DoNotAlignLastForbidden="false" DoNotAlignLastPeriod="false" DoNotAlignWhitespaceOnRight="false" DoNotApplyAutoSpaceEAsianEng="false" DoNotApplyAutoSpaceEAsianNum="false" DoNotApplyColSeparatorAtNoGap="false" DoNotApplyExtensionCharCompose="false" DoNotApplyGridInHeaderFooter="false" DoNotApplyHeaderFooterAtNoSpace="false" DoNotApplyImageEffect="false" DoNotApplyLinegridAtNoLinespacing="false" DoNotApplyShapeComment="false" DoNotApplyStrikeoutWithUnderline="false" DoNotApplyVertOffsetOfForward="false" DoNotApplyWhiteSpaceHeight="false" DoNotFormattingAtBeneathAnchor="false" DoNotHoldAnchorOfTable="false" ExtendLineheightToOffset="false" ExtendLineheightToParaBorderOffset="false" ExtendVertLimitToPageMargins="false" FixedUnderlineWidth="false" OverlapBothAllowOverlap="false" TreatQuotationAsLatin="false" UseInnerUnderline="false" UseLowercaseStrikeout="false" /></COMPATIBLEDOCUMENT></HEAD><BODY><SECDEF CharGrid="0" FirstBorder="false" FirstFill="false" LineGrid="0" OutlineShape="1" SpaceColumns="1134" TabStop="8000" TextDirection="0" TextVerticalWidthHead="0"><STARTNUMBER Equation="0" Figure="0" Page="0" PageStartsOn="Both" Table="0" /><HIDE Border="false" EmptyLine="false" Footer="false" Header="false" MasterPage="false" PageNumPos="false" /><PAGEDEF GutterType="LeftOnly" Height="84188" Landscape="0" Width="59528"><PAGEMARGIN Bottom="4252" Footer="4252" Gutter="0" Header="4252" Left="8504" Right="8504" Top="5668" /></PAGEDEF><FOOTNOTESHAPE><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit" /><NOTELINE Length="5cm" Type="Solid" Width="0.12mm" /><NOTESPACING AboveLine="850" BelowLine="567" BetweenNotes="283" /><NOTENUMBERING NewNumber="1" Type="Continuous" /><NOTEPLACEMENT BeneathText="false" Place="EachColumn" /></FOOTNOTESHAPE><ENDNOTESHAPE><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit" /><NOTELINE Length="14692344" Type="Solid" Width="0.12mm" /><NOTESPACING AboveLine="850" BelowLine="567" BetweenNotes="0" /><NOTENUMBERING NewNumber="1" Type="Continuous" /><NOTEPLACEMENT BeneathText="false" Place="EndOfDocument" /></ENDNOTESHAPE><PAGEBORDERFILL BorferFill="1" FillArea="Paper" FooterInside="false" HeaderInside="false" TextBorder="true" Type="Both"><PAGEOFFSET Bottom="1417" Left="1417" Right="1417" Top="1417" /></PAGEBORDERFILL><PAGEBORDERFILL BorferFill="1" FillArea="Paper" FooterInside="false" HeaderInside="false" TextBorder="true" Type="Even"><PAGEOFFSET Bottom="1417" Left="1417" Right="1417" Top="1417" /></PAGEBORDERFILL><PAGEBORDERFILL BorferFill="1" FillArea="Paper" FooterInside="false" HeaderInside="false" TextBorder="true" Type="Odd"><PAGEOFFSET Bottom="1417" Left="1417" Right="1417" Top="1417" /></PAGEBORDERFILL></SECDEF><SECTION Id="0">"""
 
 FOOTER="""</SECTION></BODY><TAIL></TAIL></HWPML>"""
 
-
+#인트로는 없습(원래 md파일 유지)
 INTRO="""
-<P ParaShape="7" Style="0"><TEXT CharShape="5"><CHAR>___TITLE___</CHAR></TEXT></P>
-<P ParaShape="8" Style="0"><TEXT CharShape="0"><CHAR>작성자 : ___AUTHOR___</CHAR></TEXT></P>
-<P ParaShape="8" Style="0"><TEXT CharShape="0"><CHAR>작성일 : ___DATE___</CHAR></TEXT></P>
 """
 
 fIn  = "README.md"
@@ -237,6 +250,9 @@ ret = re.sub("\r", "", ret)
 # ---------------------------------------------------------
 # Processing Logic
 # ---------------------------------------------------------
+
+# Ensure content starts with newline for regex matching
+ret = "\n" + ret
 
 # 1. XML Escape Text Content
 ret = saxutils.escape(ret)
@@ -283,6 +299,23 @@ ret = re.sub("\n            [-+*] "        , "\n"+L4_START, ret)
 ret = re.sub("\n                [-+*] "    , "\n"+L5_START, ret)
 ret = re.sub("\n                    [-+*] ", "\n"+L6_START, ret)
 
+# Ordered Lists (1. item) -> Use ParaShape 12 (Indented)
+ret = re.sub(r'\n(\d+)\. ', r'\n<P ParaShape="12" Style="0"><TEXT CharShape="0"><CHAR>\1. ', ret)
+
+# Task Lists
+ret = re.sub(r'\[ \]', r'☐', ret)
+ret = re.sub(r'\[x\]', r'☑', ret)
+ret = re.sub(r'\[X\]', r'☑', ret)
+
+# Blockquotes (> text) -> Use ParaShape 11 (Indented) + CharShape 8 (Gray/Italic)
+ret = re.sub(r'\n> (.*)', r'\n<P ParaShape="11" Style="0"><TEXT CharShape="8"><CHAR>\1</CHAR></TEXT></P>', ret)
+
+# Tables (Simple Visual Fallback)
+# Detect lines starting and ending with | and treat them as monospaced text to preserve alignment.
+# We skip the separator line |---| because it looks ugly in plain text usually, or we keep it. Use code block style.
+# Using lookahead to check if line looks like a table row
+ret = re.sub(r'(?m)^(\|.*\|$)', r'<P ParaShape="9" Style="0"><TEXT CharShape="7"><CHAR>\1</CHAR></TEXT></P>', ret)
+
 ret = re.sub("\n# "     , "\n"+H1_START, ret)
 ret = re.sub("\n## "    , "\n"+H2_START, ret)
 ret = re.sub("\n### "   , "\n"+H3_START, ret)
@@ -296,7 +329,8 @@ ret = re.sub("\n###### ", "\n"+H4_START, ret)
 ret = re.sub("\n(?=[^<])", "\n"+TXT_START, ret)
 
 # Close Tags
-ret = re.sub("\n", TXT_END+"\n", ret)
+# Use negative lookbehind (?<!</P>) to avoid adding TXT_END to lines that are already closed (like Code Blocks or HRs)
+ret = re.sub(r"(?<!</P>)\n", TXT_END+"\n", ret)
 ret = re.sub("^"+TXT_END, "", ret)
 
 

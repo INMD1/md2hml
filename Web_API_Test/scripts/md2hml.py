@@ -58,26 +58,26 @@ def process_code_block(text):
 def process_image(alt, path):
     # check if file exists
     if not os.path.exists(path):
-        return f'<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR>[Image not found: {path}]</CHAR></TEXT></P>'
+        return f'[Image not found: {path}]'
     
     # Read and encode
     try:
         with open(path, "rb") as image_file:
              encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
     except Exception as e:
-        return f'<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR>[Image error: {e}]</CHAR></TEXT></P>'
+        return f'[Image error: {e}]'
     
     # Add to global BINDATA list
     global BIN_DATA_ENTRIES
     bin_id = len(BIN_DATA_ENTRIES) + 1
     ext = os.path.splitext(path)[1].replace('.', '').lower()
-    if ext == 'jpg': ext = 'jpeg'
+    if ext == 'jpeg': ext = 'jpg'
     
-    BIN_DATA_ENTRIES.append(f'<BINITEM BinData="{encoded_string}" Format="{ext}" Type="Embedding" />')
+    BIN_DATA_ENTRIES.append(f'<BINITEM Id="{bin_id}" BinData="{encoded_string}" Format="{ext}" Type="Embedding" />')
     
     # Return Placeholder (until exact PICTURE tag syntax is confirmed)
     # Using a recognizable placeholder
-    return f'<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR>[Image Embedded: {alt} (ID: {bin_id})]</CHAR></TEXT></P>'
+    return f'[Image Embedded: {alt} (ID: {bin_id})]'
 
 
 def get_header(bindata_list=""):
@@ -238,6 +238,9 @@ ret = re.sub("\r", "", ret)
 # Processing Logic
 # ---------------------------------------------------------
 
+# Ensure content starts with newline for regex matching
+ret = "\n" + ret
+
 # 1. XML Escape Text Content
 ret = saxutils.escape(ret)
 
@@ -256,12 +259,14 @@ ret = re.sub("---(.|\n)*---", "", ret, count=1)
 
 # 2. Images: ![alt](path)
 # Must be done before text wrapping
+# Return text placeholder to avoid nested <P> tags invalidating XML
 ret = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: process_image(m.group(1), m.group(2)), ret)
 
 
 # 3. Code Blocks (Pre-processing)
 # Must be done before text wrapping to apply special ParaShape
-ret = re.sub(r'```(.*?)```', lambda m: process_code_block(m.group(1)), ret, flags=re.DOTALL)
+# Ensure it matches start of line to avoid inline issues
+ret = re.sub(r'(?m)^```(.*?)```', lambda m: process_code_block(m.group(1)), ret, flags=re.DOTALL)
 
 
 # 4. Page Break / HR: ---
@@ -294,7 +299,8 @@ ret = re.sub("\n###### ", "\n"+H4_START, ret)
 ret = re.sub("\n(?=[^<])", "\n"+TXT_START, ret)
 
 # Close Tags
-ret = re.sub("\n", TXT_END+"\n", ret)
+# Use negative lookbehind (?<!</P>) to avoid adding TXT_END to lines that are already closed (like Code Blocks or HRs)
+ret = re.sub(r"(?<!</P>)\n", TXT_END+"\n", ret)
 ret = re.sub("^"+TXT_END, "", ret)
 
 
