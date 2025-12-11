@@ -1,13 +1,11 @@
-## Revision History
-
-## 원본 제작자
 ---
 title: 마크다운 - 아래아한글 변환기, md2hml
 author: 장민석 (msjang@kisti.re.kr)
+Fork: 이호준 (lyw514549@gmail.com)
 date: 2018-02-06
 ---
 
- 
+
 # 1. 취지
 정출연/정부기관/공공기관에서 HWP 없이는 업무가 불가능하다. 때문에 자주 사용하는 마크다운 파일을 HWP로 변환하여 사용하고자 한다.
 
