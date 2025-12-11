@@ -36,23 +36,115 @@ def process_inline(text):
     # CharShape="6" is Italic (newly added)
     # Lookbehind (?<!\*) and lookahead (?!\*) to avoid matching ** (bold) parts as italic
     text = re.sub(r'(?<!\*)\*(?=\S)(.+?)(?<=\S)\*(?!\*)', r'</CHAR></TEXT><TEXT CharShape="6"><CHAR>\1</CHAR></TEXT><TEXT CharShape="0"><CHAR>', text)
+
+    # Bold: __text__ (Underscore)
+    text = re.sub(r'__(?=\S)(.+?)(?<=\S)__', r'</CHAR></TEXT><TEXT CharShape="4"><CHAR>\1</CHAR></TEXT><TEXT CharShape="0"><CHAR>', text)
+    
+    # Italic: _text_ (Underscore)
+    # Avoid matching inside words like some_variable_name if handled strictly, but standard simplified:
+    text = re.sub(r'(?<!_)_(?=\S)(.+?)(?<=\S)_(?!_)', r'</CHAR></TEXT><TEXT CharShape="6"><CHAR>\1</CHAR></TEXT><TEXT CharShape="0"><CHAR>', text)
+
+    # Inline Code: `text` -> CharShape="16" (Monospace)
+    text = re.sub(r'`(.*?)`', r'</CHAR></TEXT><TEXT CharShape="16"><CHAR>\1</CHAR></TEXT><TEXT CharShape="0"><CHAR>', text)
+
     return text
 
 
 
+
 def process_code_block(text):
-    # ```code```
-    # We match the whole block.
-    # We want to replace it with ParaShape="9" (Code Block Style)
-    # Content must be split by newline and each line wrapped in <P>...</P>
-    # Note: text contains the content inside ``` ```
-    lines = text.split('\n')
-    res = ""
+    # Native HWP Table 1x1 for Code Block
+    # text contains the content. Split by lines.
+    lines = text.strip().split('\n')
+    
+    # We construct the content inside the CELL
+    # Use ParaShape="0" for simple text inside (or a custom one)
+    # CharShape="7" or "16" (Monospace)
+    cell_content = ""
     for line in lines:
-        if not line: continue
-        # CharShape="7" is Monospace
-        # ParaShape="9" is Indented + Background (if we can)
-        res += f'<P ParaShape="9" Style="0"><TEXT CharShape="7"><CHAR>{line}</CHAR></TEXT></P>\n'
+        cell_content += f'<P ParaShape="0" Style="0"><TEXT CharShape="16"><CHAR>{saxutils.escape(line)}</CHAR></TEXT></P>'
+    
+    # Wrap in TABLE XML structure
+    # Using generic Size/Position values from reference
+    # Must wrap in <P><TEXT>...</TEXT></P> for HWPML validity
+    res = f"""<P ParaShape="0" Style="0"><TEXT CharShape="0"><TABLE BorderFill="3" CellSpacing="0" ColCount="1" PageBreak="Cell" RepeatHeader="true" RowCount="1">
+<SHAPEOBJECT Lock="false" NumberingType="Table" TextWrap="TopAndBottom" ZOrder="1">
+<SIZE Height="0" HeightRelTo="Absolute" Protect="false" Width="41954" WidthRelTo="Absolute"/>
+<POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Column" TreatAsChar="false" VertAlign="Top" VertOffset="0" VertRelTo="Para"/>
+<OUTSIDEMARGIN Bottom="283" Left="283" Right="283" Top="283"/>
+</SHAPEOBJECT>
+<INSIDEMARGIN Bottom="141" Left="510" Right="510" Top="141"/>
+<ROW>
+<CELL BorderFill="3" ColAddr="0" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="282" Protect="false" RowAddr="0" RowSpan="1" Width="41954">
+<CELLMARGIN Bottom="141" Left="510" Right="510" Top="141"/>
+<PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+{cell_content}
+</PARALIST>
+</CELL>
+</ROW>
+</TABLE><CHAR/></TEXT></P>"""
+    return res
+
+def process_table_native(table_block):
+    # table_block is the raw markdown table string
+    lines = table_block.strip().split('\n')
+    if len(lines) < 2: return table_block # Not a valid table
+
+    # Parse Header
+    # Remove leading/trailing | and split
+    header_cells = [c.strip() for c in lines[0].strip('|').split('|')]
+    col_count = len(header_cells)
+    
+    # Skip separator line (lines[1])
+    
+    # Parse Rows
+    rows_data = []
+    # Add Header as first row data (HWP renders it same, styling optional)
+    rows_data.append(header_cells)
+    
+    for i in range(2, len(lines)):
+        row_cells = [c.strip() for c in lines[i].strip('|').split('|')]
+        # Handle cell count mismatch
+        if len(row_cells) < col_count:
+            row_cells += [''] * (col_count - len(row_cells))
+        rows_data.append(row_cells[:col_count])
+
+    row_count = len(rows_data)
+    
+    # Build XML
+    # Standard width for A4 roughly 42000 units total. Split evenly.
+    total_width = 41954
+    col_width = int(total_width / col_count)
+    
+    hml_rows = ""
+    for r_idx, row in enumerate(rows_data):
+        cells_xml = ""
+        for c_idx, cell_text in enumerate(row):
+            # Process inline formatting in cell text
+            # We can lightly recurse or just text escape
+            # Applying simpler logic: escape, then generic wrapper
+            # Use CharShape="0" for normal text
+            c_txt = saxutils.escape(cell_text)
+            
+            # Simple bold for header (first row) if desired, but sticking to basic first
+            
+            cells_xml += f"""<CELL BorderFill="3" ColAddr="{c_idx}" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="282" Protect="false" RowAddr="{r_idx}" RowSpan="1" Width="{col_width}">
+<CELLMARGIN Bottom="141" Left="510" Right="510" Top="141"/>
+<PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR>{c_txt}</CHAR></TEXT></P>
+</PARALIST>
+</CELL>"""
+        hml_rows += f"<ROW>{cells_xml}</ROW>"
+
+    res = f"""<P ParaShape="0" Style="0"><TEXT CharShape="0"><TABLE BorderFill="3" CellSpacing="0" ColCount="{col_count}" PageBreak="Cell" RepeatHeader="true" RowCount="{row_count}">
+<SHAPEOBJECT Lock="false" NumberingType="Table" TextWrap="TopAndBottom" ZOrder="0">
+<SIZE Height="0" HeightRelTo="Absolute" Protect="false" Width="{total_width}" WidthRelTo="Absolute"/>
+<POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Column" TreatAsChar="false" VertAlign="Top" VertOffset="0" VertRelTo="Para"/>
+<OUTSIDEMARGIN Bottom="283" Left="283" Right="283" Top="283"/>
+</SHAPEOBJECT>
+<INSIDEMARGIN Bottom="141" Left="510" Right="510" Top="141"/>
+{hml_rows}
+</TABLE><CHAR/></TEXT></P>"""
     return res
 
 def process_image(alt, path):
@@ -94,7 +186,7 @@ def get_header(bindata_list=""):
         <BOTTOMBORDER Type="Solid" Width="0.12mm" Color="0" />
     </BORDERFILL>
 </BORDERFILLLIST>
-<CHARSHAPELIST Count="8">
+<CHARSHAPELIST Count="17">
     <CHARSHAPE BorderFillId="2" Height="1000" Id="0" ShadeColor="4294967295" SymMark="0" TextColor="0" UseFontSpace="false" UseKerning="false">
         <FONTID Hangul="1" Hanja="1" Japanese="1" Latin="1" Other="1" Symbol="1" User="1" />
         <RATIO Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100" />
@@ -157,8 +249,23 @@ def get_header(bindata_list=""):
         <RELSIZE Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100" />
         <CHAROFFSET Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0" />
     </CHARSHAPE>
+    <CHARSHAPE BorderFillId="2" Height="1000" Id="8" ShadeColor="4294967295" SymMark="0" TextColor="8421504" UseFontSpace="false" UseKerning="false">
+        <FONTID Hangul="1" Hanja="1" Japanese="1" Latin="1" Other="1" Symbol="1" User="1" />
+        <RATIO Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100" />
+        <CHARSPACING Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0" />
+        <RELSIZE Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100" />
+        <CHAROFFSET Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0" />
+        <ITALIC />
+    </CHARSHAPE>
+    <CHARSHAPE BorderFillId="2" Height="1000" Id="16" ShadeColor="4294967295" SymMark="0" TextColor="0" UseFontSpace="false" UseKerning="false">
+        <FONTID Hangul="1" Hanja="1" Japanese="1" Latin="1" Other="1" Symbol="1" User="1" />
+        <RATIO Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100" />
+        <CHARSPACING Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0" />
+        <RELSIZE Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100" />
+        <CHAROFFSET Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0" />
+    </CHARSHAPE>
 </CHARSHAPELIST>
-<PARASHAPELIST Count="11">
+<PARASHAPELIST Count="14">
     <PARASHAPE Align="Justify" AutoSpaceEAsianEng="false" AutoSpaceEAsianNum="false" BreakLatinWord="KeepWord" BreakNonLatinWord="true" Condense="0" FontLineHeight="false" HeadingType="None" Id="0" KeepLines="false" KeepWithNext="false" Level="0" LineWrap="Break" PageBreakBefore="false" SnapToGrid="true" TabDef="0" VerAlign="Baseline" WidowOrphan="false">
         <PARAMARGIN Indent="0" Left="0" LineSpacing="160" LineSpacingType="Percent" Next="0" Prev="0" Right="0" />
         <PARABORDER BorderFill="2" Connect="false" IgnoreMargin="false" />
@@ -203,17 +310,26 @@ def get_header(bindata_list=""):
         <PARAMARGIN Indent="0" Left="0" LineSpacing="160" LineSpacingType="Percent" Next="0" Prev="0" Right="0" />
         <PARABORDER BorderFill="4" Connect="false" IgnoreMargin="false" />
     </PARASHAPE>
+    <PARASHAPE Align="Justify" AutoSpaceEAsianEng="false" AutoSpaceEAsianNum="false" BreakLatinWord="KeepWord" BreakNonLatinWord="true" Condense="0" FontLineHeight="false" HeadingType="None" Id="11" KeepLines="false" KeepWithNext="false" Level="0" LineWrap="Break" PageBreakBefore="false" SnapToGrid="true" TabDef="0" VerAlign="Baseline" WidowOrphan="false">
+        <PARAMARGIN Indent="0" Left="2000" LineSpacing="160" LineSpacingType="Percent" Next="0" Prev="0" Right="0" />
+        <PARABORDER BorderFill="2" Connect="false" IgnoreMargin="false" />
+    </PARASHAPE>
+    <PARASHAPE Align="Justify" AutoSpaceEAsianEng="false" AutoSpaceEAsianNum="false" BreakLatinWord="KeepWord" BreakNonLatinWord="true" Condense="0" FontLineHeight="false" HeadingType="None" Id="12" KeepLines="false" KeepWithNext="false" Level="0" LineWrap="Break" PageBreakBefore="false" SnapToGrid="true" TabDef="0" VerAlign="Baseline" WidowOrphan="false">
+        <PARAMARGIN Indent="-2104" Left="2104" LineSpacing="160" LineSpacingType="Percent" Next="0" Prev="0" Right="0" />
+        <PARABORDER BorderFill="2" Connect="false" IgnoreMargin="false" />
+    </PARASHAPE>
+    <PARASHAPE Align="Justify" AutoSpaceEAsianEng="false" AutoSpaceEAsianNum="false" BreakLatinWord="KeepWord" BreakNonLatinWord="true" Condense="0" FontLineHeight="false" HeadingType="None" Id="13" KeepLines="false" KeepWithNext="false" Level="0" LineWrap="Break" PageBreakBefore="false" SnapToGrid="true" TabDef="0" VerAlign="Baseline" WidowOrphan="false">
+        <PARAMARGIN Indent="-2104" Left="4208" LineSpacing="160" LineSpacingType="Percent" Next="0" Prev="0" Right="0" />
+        <PARABORDER BorderFill="2" Connect="false" IgnoreMargin="false" />
+    </PARASHAPE>
 </PARASHAPELIST>
 
 </MAPPINGTABLE><COMPATIBLEDOCUMENT TargetProgram="None"><LAYOUTCOMPATIBILITY AdjustBaselineInFixedLinespacing="false" AdjustBaselineOfObjectToBottom="false" AdjustLineheightToFont="false" AdjustMarginFromAdjustLineheight="false" AdjustParaBorderOffsetWithBorder="false" AdjustParaBorderfillToSpacing="false" AdjustVertPosOfLine="false" ApplyAtLeastToPercent100Pct="false" ApplyCharSpacingToCharGrid="false" ApplyExtendHeaderFooterEachSection="false" ApplyFontWeightToBold="false" ApplyFontspaceToLatin="false" ApplyMinColumnWidthTo1mm="false" ApplyNextspacingOfLastPara="false" ApplyParaBorderToOutside="false" ApplyPrevspacingBeneathObject="false" ApplyTabPosBasedOnSegment="false" BaseCharUnitOfIndentOnFirstChar="false" BaseCharUnitOnEAsian="false" BaseLinespacingOnLinegrid="false" BreakTabOverLine="false" ConnectParaBorderfillOfEqualBorder="false" DoNotAdjustEmptyAnchorLine="false" DoNotAdjustWordInJustify="false" DoNotAlignLastForbidden="false" DoNotAlignLastPeriod="false" DoNotAlignWhitespaceOnRight="false" DoNotApplyAutoSpaceEAsianEng="false" DoNotApplyAutoSpaceEAsianNum="false" DoNotApplyColSeparatorAtNoGap="false" DoNotApplyExtensionCharCompose="false" DoNotApplyGridInHeaderFooter="false" DoNotApplyHeaderFooterAtNoSpace="false" DoNotApplyImageEffect="false" DoNotApplyLinegridAtNoLinespacing="false" DoNotApplyShapeComment="false" DoNotApplyStrikeoutWithUnderline="false" DoNotApplyVertOffsetOfForward="false" DoNotApplyWhiteSpaceHeight="false" DoNotFormattingAtBeneathAnchor="false" DoNotHoldAnchorOfTable="false" ExtendLineheightToOffset="false" ExtendLineheightToParaBorderOffset="false" ExtendVertLimitToPageMargins="false" FixedUnderlineWidth="false" OverlapBothAllowOverlap="false" TreatQuotationAsLatin="false" UseInnerUnderline="false" UseLowercaseStrikeout="false" /></COMPATIBLEDOCUMENT></HEAD><BODY><SECDEF CharGrid="0" FirstBorder="false" FirstFill="false" LineGrid="0" OutlineShape="1" SpaceColumns="1134" TabStop="8000" TextDirection="0" TextVerticalWidthHead="0"><STARTNUMBER Equation="0" Figure="0" Page="0" PageStartsOn="Both" Table="0" /><HIDE Border="false" EmptyLine="false" Footer="false" Header="false" MasterPage="false" PageNumPos="false" /><PAGEDEF GutterType="LeftOnly" Height="84188" Landscape="0" Width="59528"><PAGEMARGIN Bottom="4252" Footer="4252" Gutter="0" Header="4252" Left="8504" Right="8504" Top="5668" /></PAGEDEF><FOOTNOTESHAPE><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit" /><NOTELINE Length="5cm" Type="Solid" Width="0.12mm" /><NOTESPACING AboveLine="850" BelowLine="567" BetweenNotes="283" /><NOTENUMBERING NewNumber="1" Type="Continuous" /><NOTEPLACEMENT BeneathText="false" Place="EachColumn" /></FOOTNOTESHAPE><ENDNOTESHAPE><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit" /><NOTELINE Length="14692344" Type="Solid" Width="0.12mm" /><NOTESPACING AboveLine="850" BelowLine="567" BetweenNotes="0" /><NOTENUMBERING NewNumber="1" Type="Continuous" /><NOTEPLACEMENT BeneathText="false" Place="EndOfDocument" /></ENDNOTESHAPE><PAGEBORDERFILL BorferFill="1" FillArea="Paper" FooterInside="false" HeaderInside="false" TextBorder="true" Type="Both"><PAGEOFFSET Bottom="1417" Left="1417" Right="1417" Top="1417" /></PAGEBORDERFILL><PAGEBORDERFILL BorferFill="1" FillArea="Paper" FooterInside="false" HeaderInside="false" TextBorder="true" Type="Even"><PAGEOFFSET Bottom="1417" Left="1417" Right="1417" Top="1417" /></PAGEBORDERFILL><PAGEBORDERFILL BorferFill="1" FillArea="Paper" FooterInside="false" HeaderInside="false" TextBorder="true" Type="Odd"><PAGEOFFSET Bottom="1417" Left="1417" Right="1417" Top="1417" /></PAGEBORDERFILL></SECDEF><SECTION Id="0">"""
 
 FOOTER="""</SECTION></BODY><TAIL></TAIL></HWPML>"""
 
-
+#인트로는 없습(원래 md파일 유지)
 INTRO="""
-<P ParaShape="7" Style="0"><TEXT CharShape="5"><CHAR>___TITLE___</CHAR></TEXT></P>
-<P ParaShape="8" Style="0"><TEXT CharShape="0"><CHAR>작성자 : ___AUTHOR___</CHAR></TEXT></P>
-<P ParaShape="8" Style="0"><TEXT CharShape="0"><CHAR>작성일 : ___DATE___</CHAR></TEXT></P>
 """
 
 fIn  = "README.md"
@@ -254,7 +370,7 @@ d_match = re.search("(?<=date: ).*", ret)
 d = d_match.group(0) if d_match else "Unknown"
 
 # Remove Front Matter
-ret = re.sub("---(.|\n)*---", "", ret, count=1)
+ret = re.sub("---(.|\n)*?---", "", ret, count=1)
 
 
 # 2. Images: ![alt](path)
@@ -266,6 +382,10 @@ ret = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: process_image(m.group(1), m.group
 # 3. Code Blocks (Pre-processing)
 # Must be done before text wrapping to apply special ParaShape
 # Ensure it matches start of line to avoid inline issues
+# Update: Now returns a TABLE XML string.
+# We need to ensure this XML string is NOT wrapped in <P> by the Text Wrapping step (Step 7)
+# We can wrap it in a placeholder, or rely on Text Wrapping respecting tags.
+# Step 7 wraps lines not starting with <. Our Table string starts with <TABLE, so it should be safe.
 ret = re.sub(r'(?m)^```(.*?)```', lambda m: process_code_block(m.group(1)), ret, flags=re.DOTALL)
 
 
@@ -286,6 +406,27 @@ ret = re.sub("\n            [-+*] "        , "\n"+L4_START, ret)
 ret = re.sub("\n                [-+*] "    , "\n"+L5_START, ret)
 ret = re.sub("\n                    [-+*] ", "\n"+L6_START, ret)
 
+# Ordered Lists (1. item) -> Use ParaShape 12 (Indented)
+ret = re.sub(r'\n(\d+)\. ', r'\n<P ParaShape="12" Style="0"><TEXT CharShape="0"><CHAR>\1. ', ret)
+
+# Nested Ordered Lists (    1. item) -> Use ParaShape 13 (Double Indented)
+ret = re.sub(r'\n    (\d+)\. ', r'\n<P ParaShape="13" Style="0"><TEXT CharShape="0"><CHAR>\1. ', ret)
+
+# Task Lists
+ret = re.sub(r'\[ \]', r'☐', ret)
+ret = re.sub(r'\[x\]', r'☑', ret)
+ret = re.sub(r'\[X\]', r'☑', ret)
+
+# Blockquotes (> text) -> Use ParaShape 11 (Indented) + CharShape 8 (Gray/Italic)
+# Handle > and &gt; (due to escaping)
+ret = re.sub(r'\n(&gt;|>) (.*)', r'\n<P ParaShape="11" Style="0"><TEXT CharShape="8"><CHAR>\2</CHAR></TEXT></P>', ret)
+
+# Tables (Native XML)
+# Detect full table blocks. Regex looks for lines starting with | and ending with | (multiline)
+# We capture the whole block and pass to process_table_native
+# Note: This is complex with regex. We assume a table block is a contiguous set of lines starting with |
+ret = re.sub(r'(?m)((?:^\|.*\|$\n?)+)', lambda m: process_table_native(m.group(1)), ret)
+
 ret = re.sub("\n# "     , "\n"+H1_START, ret)
 ret = re.sub("\n## "    , "\n"+H2_START, ret)
 ret = re.sub("\n### "   , "\n"+H3_START, ret)
@@ -300,7 +441,8 @@ ret = re.sub("\n(?=[^<])", "\n"+TXT_START, ret)
 
 # Close Tags
 # Use negative lookbehind (?<!</P>) to avoid adding TXT_END to lines that are already closed (like Code Blocks or HRs)
-ret = re.sub(r"(?<!</P>)\n", TXT_END+"\n", ret)
+# Also prevent adding it to lines ending with > (XML structure like TABLE, ROW, etc)
+ret = re.sub(r"(?<!</P>)(?<!>)\n", TXT_END+"\n", ret)
 ret = re.sub("^"+TXT_END, "", ret)
 
 
